@@ -45,11 +45,11 @@
                      :demo {:dependencies [[alandipert/storage-atom "2.0.1"]
                                            [com.cognitect/transit-cljs "0.8.239"] ;; Overrides version in storage-atom which prevents compiler warnings about uuid? and boolean? being replaced
                                            [secretary "1.2.3"]]}
-                     :dev-cider {:figwheel {:nrepl-port       7777
+                     :dev-cider {:figwheel {:nrepl-port       3449
                                             :nrepl-middleware ["cider.nrepl/cider-middleware"
                                                                "cemerick.piggieback/wrap-cljs-repl"]}
                                  :dependencies [[com.cemerick/piggieback "0.2.1"]
-                                                [figwheel-sidecar "0.5.4-6"]]}
+                                                [figwheel-sidecar "0.5.7"]]}
                      :dev-run   {:clean-targets ^{:protect false} ["run/resources/public/compiled_dev"]}
                      :prod-run  {:clean-targets ^{:protect false} ["run/resources/public/compiled_prod"]}
                      :dev-test  {:clean-targets ^{:protect false} ["run/test/compiled"]}}
@@ -95,7 +95,7 @@
               :test-commands   {}} ;; figwheel 0.5.2 required this for some reason
 
   :figwheel {:css-dirs    ["run/resources/public/assets/css"]
-             :server-port ~fig-port
+             :server-port 3449
              :repl        false}
 
   :aws {:access-key       ~(System/getenv "DAY8_AWS_ACCESS_KEY_ID")
@@ -126,7 +126,7 @@
                              :linux   "xdg-open"}}}
 
   :aliases          {;; *** DEV ***
-
+                     ;; +dev-cider,+demo
                      "dev-once"   ["with-profile" "+dev-run,+demo" "do"
                                    ["clean"]
                                    ["cljsbuild" "once" "demo"]
