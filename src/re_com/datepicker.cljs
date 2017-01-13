@@ -3,28 +3,65 @@
   (:require
     [reagent.core         :as    reagent]
     [cljs-time.core       :refer [now minus plus months days year month day day-of-week first-day-of-the-month before? after?]]
+    [cljs-time.coerce     :refer [to-date]]
     [re-com.validate      :refer [goog-date? css-style? html-attr?] :refer-macros [validate-args-macro]]
     [cljs-time.predicates :refer [sunday?]]
     [cljs-time.format     :refer [parse unparse formatters formatter]]
     [re-com.box           :refer [border h-box flex-child-style]]
     [re-com.util          :refer [deref-or-value now->utc]]
-    [re-com.popover       :refer [popover-anchor-wrapper popover-content-wrapper]]))
+    [re-com.popover       :refer [popover-anchor-wrapper popover-content-wrapper]]
+    [tongue.core          :as tongue]))
 
 ;; Loosely based on ideas: https://github.com/dangrossman/bootstrap-daterangepicker
 
 ;; --- cljs-time facades ------------------------------------------------------
 
-(def ^:const month-format (formatter "MMMM yyyy"))
 
 (def ^:const week-format (formatter "ww"))
 
 (def ^:const date-format (formatter "yyyy MMM dd"))
 
+(def inst-strings
+  {:en {:weekdays-short  ["Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"]
+        :weekdays-long   ["Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday"]
+        :months-short    ["Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"]
+        :months-long     ["January" "February" "March" "April" "May" "June" "July" "August"
+                          "September" "October" "November" "December"]}
+ 
+   :ru {:weekdays-short  ["Вс" "Пн" "Вт" "Вт" "Чт" "Пт" "Сб"]
+        :weekdays-long   ["Воскресенье" "Понедельник" "Вторник" "Среда" "Четверг" "Пятница" "Суббота"]
+        :months-short    ["Янв" "Фев" "Март" "Апр" "Май" "Июнь" "Июль" "Авг" "Сен" "Окт" "Ноя" "Дек"]
+        :months-long     ["Январь" "Февраль" "Март" "Апрель" "Май" "Июнь" "Июль" "Август"
+                          "Сентябрь" "Октябрь" "Ноябрь" "Декабрь"]}})
+
+(def ^:private days-vector
+  [{:key :Mo :short-name "M" :name "MON"}
+   {:key :Tu :short-name "T" :name "TUE"}
+   {:key :We :short-name "W" :name "WED"}
+   {:key :Th :short-name "T" :name "THU"}
+   {:key :Fr :short-name "F" :name "FRI"}
+   {:key :Sa :short-name "S" :name "SAT"}
+   {:key :Su :short-name "S" :name "SUN"}])
+
+(def dicts
+  {:en {:month-format (tongue/inst-formatter "{month-long} {year}" (inst-strings :en))
+        :week-format (tongue/inst-formatter "{weekday-short}" (inst-strings :en))}
+   
+   :ru {:month-format (tongue/inst-formatter "{month-long} {year}" (inst-strings :ru))
+        :week-format (tongue/inst-formatter "{weekday-short}" (inst-strings :ru))}})
+
+(def translate
+  (tongue/build-translate dicts))
+
 (defn iso8601->date [iso8601]
   (when (seq iso8601)
     (parse (formatters :basic-date) iso8601)))
 
-(defn- month-label [date] (unparse month-format date))
+(defn- month-label [date]
+  (->> date to-date (translate :ru :month-format)))
+
+(defn- week-label [date]
+  (->> date to-date (translate :ru :week-format)))
 
 (defn- dec-month [date] (minus date (months 1)))
 
@@ -61,14 +98,6 @@
   (or (=date date1 date2) (after? date1 date2)))
 
 
-(def ^:private days-vector
-  [{:key :Mo :short-name "M" :name "MON"}
-   {:key :Tu :short-name "T" :name "TUE"}
-   {:key :We :short-name "W" :name "WED"}
-   {:key :Th :short-name "T" :name "THU"}
-   {:key :Fr :short-name "F" :name "FRI"}
-   {:key :Sa :short-name "S" :name "SAT"}
-   {:key :Su :short-name "S" :name "SUN"}])
 
 (defn- rotate
   [n coll]
@@ -153,10 +182,8 @@
     [:td {:class    classes
           :on-click (handler-fn (on-click))} (day date)]))
 
-
 (defn- week-td [date]
   [:td {:class "week"} (unparse week-format date)])
-
 
 (defn- table-tr
   "Return 7 columns of date cells from date inclusive"

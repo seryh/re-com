@@ -12,6 +12,7 @@
   :dependencies     [[org.clojure/clojure         "1.8.0"]
                      [org.clojure/clojurescript   "1.9.89"]
                      [reagent                     "0.6.0"]
+                     [tongue "0.1.4"]
                      [org.clojure/core.async "0.2.391"]
                      [com.andrewmcveigh/cljs-time "0.4.0"]] ;; TODO: Bump this to 0.5.0 as soon as it's available (https://github.com/Day8/re-com/pull/98/files)
 
