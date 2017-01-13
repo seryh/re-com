@@ -28,20 +28,28 @@
         :months-long     ["January" "February" "March" "April" "May" "June" "July" "August"
                           "September" "October" "November" "December"]}
  
-   :ru {:weekdays-short  ["Вс" "Пн" "Вт" "Вт" "Чт" "Пт" "Сб"]
+   :ru {:weekdays-short  ["Вс" "Пн" "Вт" "Ср" "Чт" "Пт" "Сб"]
         :weekdays-long   ["Воскресенье" "Понедельник" "Вторник" "Среда" "Четверг" "Пятница" "Суббота"]
         :months-short    ["Янв" "Фев" "Март" "Апр" "Май" "Июнь" "Июль" "Авг" "Сен" "Окт" "Ноя" "Дек"]
         :months-long     ["Январь" "Февраль" "Март" "Апрель" "Май" "Июнь" "Июль" "Август"
                           "Сентябрь" "Октябрь" "Ноябрь" "Декабрь"]}})
 
 (def ^:private days-vector
-  [{:key :Mo :short-name "M" :name "MON"}
-   {:key :Tu :short-name "T" :name "TUE"}
-   {:key :We :short-name "W" :name "WED"}
-   {:key :Th :short-name "T" :name "THU"}
-   {:key :Fr :short-name "F" :name "FRI"}
-   {:key :Sa :short-name "S" :name "SAT"}
-   {:key :Su :short-name "S" :name "SUN"}])
+  {:en [{:key :Mo :name "MON"}
+        {:key :Tu :name "TUE"}
+        {:key :We :name "WED"}
+        {:key :Th :name "THU"}
+        {:key :Fr :name "FRI"}
+        {:key :Sa :name "SAT"}
+        {:key :Su :name "SUN"}]
+
+   :ru [{:key :Mo :name "Пн"}
+        {:key :Tu :name "Вт"}
+        {:key :We :name "Ср"}
+        {:key :Th :name "Чт"}
+        {:key :Fr :name "Пт"}
+        {:key :Sa :name "Сб"}
+        {:key :Su :name "Вс"}]})
 
 (def dicts
   {:en {:month-format (tongue/inst-formatter "{month-long} {year}" (inst-strings :en))
@@ -153,7 +161,7 @@
             [:i.zmdi.zmdi-chevron-right
              {:style {:font-size "24px"}}]])
      (conj template-row
-           (for [day (rotate start-of-week days-vector)]
+           (for [day (rotate start-of-week (days-vector :ru))]
              ^{:key (:key day)} [:th {:class "day-enabled"} (str (:name day))]))]))
 
 
