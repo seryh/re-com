@@ -21,7 +21,7 @@
 
 (def ^:const date-format (formatter "yyyy MMM dd"))
 
-(def inst-strings
+(def i18n-default
   {:en {:weekdays-short  ["Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat"]
         :weekdays-long   ["Sunday" "Monday" "Tuesday" "Wednesday" "Thursday" "Friday" "Saturday"]
         :months-short    ["Jan" "Feb" "Mar" "Apr" "May" "Jun" "Jul" "Aug" "Sep" "Oct" "Nov" "Dec"]
@@ -34,29 +34,12 @@
         :months-long     ["Январь" "Февраль" "Март" "Апрель" "Май" "Июнь" "Июль" "Август"
                           "Сентябрь" "Октябрь" "Ноябрь" "Декабрь"]}})
 
-(def ^:private days-vector
-  {:en [{:key :Mo :name "MON"}
-        {:key :Tu :name "TUE"}
-        {:key :We :name "WED"}
-        {:key :Th :name "THU"}
-        {:key :Fr :name "FRI"}
-        {:key :Sa :name "SAT"}
-        {:key :Su :name "SUN"}]
-
-   :ru [{:key :Mo :name "Пн"}
-        {:key :Tu :name "Вт"}
-        {:key :We :name "Ср"}
-        {:key :Th :name "Чт"}
-        {:key :Fr :name "Пт"}
-        {:key :Sa :name "Сб"}
-        {:key :Su :name "Вс"}]})
 
 (def dicts
-  {:en {:month-format (tongue/inst-formatter "{month-long} {year}" (inst-strings :en))
-        :week-format (tongue/inst-formatter "{weekday-short}" (inst-strings :en))}
-   
-   :ru {:month-format (tongue/inst-formatter "{month-long} {year}" (inst-strings :ru))
-        :week-format (tongue/inst-formatter "{weekday-short}" (inst-strings :ru))}})
+  (reduce-kv #(assoc %1 %2
+                     {:month-format (tongue/inst-formatter "{month-long} {year}" (i18n-default %2))
+                      :week-format  (tongue/inst-formatter "{weekday-short}"     (i18n-default %2))})
+             {} i18n-default))
 
 (def translate
   (tongue/build-translate dicts))
@@ -65,11 +48,11 @@
   (when (seq iso8601)
     (parse (formatters :basic-date) iso8601)))
 
-(defn- month-label [date]
-  (->> date to-date (translate :ru :month-format)))
+(defn- month-label [lang date]
+  (->> date to-date (translate lang :month-format)))
 
-(defn- week-label [date]
-  (->> date to-date (translate :ru :week-format)))
+(defn- week-label [lang date]
+  (->> date to-date (translate lang :week-format)))
 
 (defn- dec-month [date] (minus date (months 1)))
 
@@ -105,8 +88,6 @@
 (defn- >=date [date1 date2]
   (or (=date date1 date2) (after? date1 date2)))
 
-
-
 (defn- rotate
   [n coll]
   (let [c (count coll)]
@@ -116,6 +97,9 @@
   #(= (day-of-week %) (inc d)))
 
 ;; ----------------------------------------------------------------------------
+
+(def ^:private days-vector
+  (reduce-kv #(assoc %1 %2 (->> %3 :weekdays-short (rotate 1) vec)) {} i18n-default))
 
 
 (defn- main-div-with
@@ -140,7 +124,7 @@
 
 (defn- table-thead
   "Answer 2 x rows showing month with nav buttons and days NOTE: not internationalized"
-  [display-month {show-weeks? :show-weeks? minimum :minimum maximum :maximum start-of-week :start-of-week}]
+  [display-month {show-weeks? :show-weeks? minimum :minimum maximum :maximum start-of-week :start-of-week lang :lang}]
   (let [prev-date     (dec-month @display-month)
         ;prev-enabled? (if minimum (after? prev-date (dec-month minimum)) true)
         prev-enabled? (if minimum (after? prev-date minimum) true)
@@ -154,15 +138,15 @@
                  :on-click (handler-fn (when prev-enabled? (reset! display-month prev-date)))}
             [:i.zmdi.zmdi-chevron-left
              {:style {:font-size "24px"}}]]
-           [:th {:class "month" :col-span "5"} (month-label @display-month)]
+           [:th {:class "month" :col-span "5"} (month-label lang @display-month)]
            [:th {:class (str "next " (if next-enabled? "available selectable" "disabled"))
                  :style {:padding "0px"}
                  :on-click (handler-fn (when next-enabled? (reset! display-month next-date)))}
             [:i.zmdi.zmdi-chevron-right
              {:style {:font-size "24px"}}]])
      (conj template-row
-           (for [day (rotate start-of-week (days-vector :ru))]
-             ^{:key (:key day)} [:th {:class "day-enabled"} (str (:name day))]))]))
+           (for [day (rotate start-of-week (days-vector lang))]
+             ^{:key day} [:th {:class "day-enabled"} (str day)]))]))
 
 
 (defn- selection-changed
@@ -234,7 +218,8 @@
    {:name :hide-border?  :required false :default false              :type "boolean"                                                :description "when true, the border is not displayed"}
    {:name :class         :required false                             :type "string"                         :validate-fn string?    :description "CSS class names, space separated"}
    {:name :style         :required false                             :type "CSS style map"                  :validate-fn css-style? :description "CSS styles to add or override"}
-   {:name :attr          :required false                             :type "HTML attr map"                  :validate-fn html-attr? :description [:span "HTML attributes, like " [:code ":on-mouse-move"] [:br] "No " [:code ":class"] " or " [:code ":style"] "allowed"]}])
+   {:name :attr          :required false                             :type "HTML attr map"                  :validate-fn html-attr? :description [:span "HTML attributes, like " [:code ":on-mouse-move"] [:br] "No " [:code ":class"] " or " [:code ":style"] "allowed"]}
+   {:name :lang          :required false :default :en                :type "keyword"                        :validate-fn keyword?   :description "language identificator"}])
 
 (defn datepicker
   [& {:keys [model] :as args}]
@@ -243,13 +228,16 @@
         internal-model (reagent/atom @external-model) ;; Create a new atom from the model to be used internally 
         display-month  (reagent/atom (first-day-of-the-month (or @internal-model (now))))]
     (fn datepicker-component
-      [& {:keys [model disabled? hide-border? on-change start-of-week class style attr]
-          :or   {start-of-week 6} ;; Default to Sunday
+      [& {:keys [model disabled? hide-border? on-change start-of-week class style attr lang]
+          :or   {start-of-week 6 ;; Default to Sunday
+                 lang :en} 
           :as   properties}]
       {:pre [(validate-args-macro datepicker-args-desc properties "datepicker")]}
       (let [latest-ext-model    (deref-or-value model)
-            props-with-defaults (merge properties {:start-of-week start-of-week})
+            props-with-defaults (merge properties {:start-of-week start-of-week
+                                                   :lang lang})
             configuration       (configure props-with-defaults)]
+        
         (when (not= @external-model latest-ext-model) ;; Has model changed externally?
           (reset! external-model latest-ext-model)
           (reset! internal-model latest-ext-model)
