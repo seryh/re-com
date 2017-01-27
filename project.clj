@@ -4,7 +4,7 @@
 
 ;; ---------------------------------------------------------------------------------------
 
-(defproject         re-com "1.3.1"
+(defproject         re-com "1.3.1-loc"
   :description      "Reusable UI components for Reagent"
   :url              "https://github.com/seryh/re-com.git"
   :license          {:name "MIT"}
@@ -20,7 +20,7 @@
   ;
   ;:unpack-resources {:resource     [re-com "0.1.6"]
   ;                   :extract-path "run/resources2"}
-  ; FUTURE VERSION SHOULD SUPPORT THE FOLLOWING SYNTAX
+                                        ; FUTURE VERSION SHOULD SUPPORT THE FOLLOWING SYNTAX
   ;:unpack-resources [{:resource     [re-com "0.1.6"]
   ;                    :extract-from "resources"
   ;                    :extract-path "run/resources-com"
